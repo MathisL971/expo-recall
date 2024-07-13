@@ -1,21 +1,22 @@
 import { ClerkProvider, ClerkLoaded } from "@clerk/clerk-expo";
 import * as SecureStore from "expo-secure-store";
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from "@react-navigation/native";
-import { useColorScheme } from "react-native";
-import { Button, TamaguiProvider } from "tamagui";
+import { TamaguiProvider } from "tamagui";
 import { tamaguiConfig } from "../tamagui.config";
 
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect, useState } from "react";
+import { useContext, useEffect } from "react";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useAuth } from "@clerk/clerk-expo";
-import SettingsSVG from "../assets/svgs/settings";
-import { SettingsSheet } from "./(auth)/_components/settings-sheet";
+import {
+  ThemeContext,
+  ThemeProvider as ContextThemeProvider,
+} from "../contexts/ThemeContext";
+import {
+  ThemeProvider,
+  DarkTheme,
+  DefaultTheme,
+} from "@react-navigation/native";
 
 const tokenCache = {
   async getToken(key: string) {
@@ -37,6 +38,7 @@ const tokenCache = {
     try {
       return SecureStore.setItemAsync(key, value);
     } catch (err) {
+      console.error("SecureStore set item error: ", err);
       return;
     }
   },
@@ -53,7 +55,6 @@ if (!publishableKey) {
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     Inter: require("@tamagui/font-inter/otf/Inter-Medium.otf"),
     InterBold: require("@tamagui/font-inter/otf/Inter-Bold.otf"),
@@ -70,6 +71,16 @@ export default function RootLayout() {
   }
 
   return (
+    <ContextThemeProvider>
+      <ThemeLayer />
+    </ContextThemeProvider>
+  );
+}
+
+const ThemeLayer = () => {
+  const { colorScheme } = useContext(ThemeContext);
+
+  return (
     <TamaguiProvider config={tamaguiConfig} defaultTheme={colorScheme!}>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
@@ -80,19 +91,15 @@ export default function RootLayout() {
       </ThemeProvider>
     </TamaguiProvider>
   );
-}
+};
 
 const AuthenticationLayer = () => {
   const { isSignedIn, isLoaded } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
-  const [open, setOpen] = useState(false);
-
   useEffect(() => {
-    if (!isLoaded) {
-      return;
-    }
+    if (!isLoaded) return;
 
     const inAuthGroup = segments[0] === "(auth)";
 
@@ -110,22 +117,6 @@ const AuthenticationLayer = () => {
           name="(auth)"
           options={{
             headerTitle: "Recall",
-            headerRight: () => {
-              return (
-                <Button
-                  style={{
-                    backgroundColor: "transparent",
-                    padding: 0,
-                  }}
-                  onPress={() => {
-                    setOpen(true);
-                  }}
-                >
-                  <SettingsSVG />
-                  {open && <SettingsSheet open={open} setOpen={setOpen} />}
-                </Button>
-              );
-            },
           }}
         />
       ) : (

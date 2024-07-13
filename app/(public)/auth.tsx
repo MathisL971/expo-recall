@@ -1,9 +1,14 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { View } from "react-native";
-import { H1, H6, Button } from "tamagui";
-import AuthSheet from "./_components/auth-sheet";
+import { H1, H6, Button, Tabs, SizableText } from "tamagui";
+import { Switch } from "react-native";
+import { ThemeContext } from "@/contexts/ThemeContext";
+import { Sheet } from "../_components/sheet";
+import SignInForm from "./_components/signin-form";
+import SignUpForm from "./_components/signup-form";
 
 export default function Auth() {
+  const { colorScheme, toggleColorScheme } = useContext(ThemeContext);
   const [open, setOpen] = useState(false);
 
   return (
@@ -55,7 +60,51 @@ export default function Auth() {
         </Button>
       </View>
 
-      {open && <AuthSheet open={open} setOpen={setOpen} />}
+      <Switch
+        value={colorScheme === "dark"}
+        onValueChange={() => {
+          toggleColorScheme();
+        }}
+      />
+      {open && (
+        <Sheet onClose={() => setOpen(false)}>
+          <Tabs
+            defaultValue={"tab1"}
+            orientation="horizontal"
+            flexDirection="column"
+            overflow="hidden"
+          >
+            <Tabs.List
+              disablePassBorderRadius="bottom"
+              aria-label="Authentication Tabs"
+              style={{
+                marginBottom: 20,
+              }}
+            >
+              <Tabs.Tab flex={1} value="tab1">
+                <SizableText fontFamily="$body">Sign In</SizableText>
+              </Tabs.Tab>
+              <Tabs.Tab flex={1} value="tab2">
+                <SizableText fontFamily="$body">Sign Up</SizableText>
+              </Tabs.Tab>
+            </Tabs.List>
+            <Tabs.Content
+              value="tab1"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 20,
+              }}
+            >
+              <SignInForm />
+            </Tabs.Content>
+
+            <Tabs.Content value="tab2">
+              <SignUpForm />
+            </Tabs.Content>
+          </Tabs>
+        </Sheet>
+      )}
     </View>
   );
 }

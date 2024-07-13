@@ -55,15 +55,16 @@ export default function SignUpForm() {
 
       if (completeSignUp.status === "complete") {
         await setActive({ session: completeSignUp.createdSessionId });
+        setLoading(false);
         router.replace("/");
       } else {
+        setLoading(false);
         console.error(JSON.stringify(completeSignUp, null, 2));
       }
     } catch (err: any) {
       // See https://clerk.com/docs/custom-flows/error-handling
       // for more info on error handling
       console.error(JSON.stringify(err, null, 2));
-    } finally {
       setLoading(false);
     }
   };

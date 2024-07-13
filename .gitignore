@@ -10,6 +10,7 @@ npm-debug.*
 *.orig.*
 web-build/
 .env
+server/assets/pdfs
 
 # macOS
 .DS_Store

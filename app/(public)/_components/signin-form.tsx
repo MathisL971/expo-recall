@@ -28,25 +28,23 @@ export default function SignInForm() {
 
       if (signInAttempt.status === "complete") {
         await setActive({ session: signInAttempt.createdSessionId });
+        setLoading(false);
         router.replace("/");
       } else {
-        // See https://clerk.com/docs/custom-flows/error-handling
-        // for more info on error handling
+        setLoading(false);
         setError("Invalid email or password");
         console.error(JSON.stringify(signInAttempt, null, 2));
-
         setTimeout(() => {
           setError("");
         }, 5000);
       }
     } catch (err: any) {
+      setLoading(false);
       setError(err.errors[0].message);
       console.error(JSON.stringify(err, null, 2));
       setTimeout(() => {
         setError("");
       }, 5000);
-    } finally {
-      setLoading(false);
     }
   }, [isLoaded, email, password]);
 
