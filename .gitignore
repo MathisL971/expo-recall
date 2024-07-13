@@ -10,7 +10,8 @@ npm-debug.*
 *.orig.*
 web-build/
 .env
-server/assets/pdfs
+server/node_modules/
+server/expo-recall-56743-firebase-adminsdk-zc45j-f84ee77898
 
 # macOS
 .DS_Store
