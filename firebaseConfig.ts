@@ -132,6 +132,10 @@ export async function deleteResourceSubscription(
   });
 }
 
+export async function deleteResourceSubscriptionById(id: string) {
+  await deleteDoc(doc(db, "resourceSubscriptions", id));
+}
+
 export async function updateResource(id: string, data: object) {
   const resourceRef = doc(db, "resources", id);
   await updateDoc(resourceRef, data);
