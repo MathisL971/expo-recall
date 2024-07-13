@@ -2,15 +2,22 @@
 const express = require("express");
 const { initializeApp, cert } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
+require("dotenv").config();
 const cron = require("node-cron");
-// const Expo = require("expo-server-sdk").default;
+const Expo = require("expo-server-sdk").default;
 const pdfParse = require("pdf-parse");
 const fs = require("fs");
 const path = require("path");
 const { PDFDocument } = require("pdf-lib");
 const serviceAccount = require("./expo-recall-56743-firebase-adminsdk-zc45j-f84ee77898.json");
+const { createClerkClient } = require("@clerk/clerk-sdk-node");
 
 const app = express();
+
+const clerkClient = createClerkClient({
+  publishableKey: process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY,
+  secretKey: process.env.CLERK_SECRET_KEY,
+});
 
 app.use(express.json());
 
@@ -20,7 +27,7 @@ initializeApp({
 
 const db = getFirestore();
 
-// let expo = new Expo();
+let expo = new Expo();
 const { OpenAI } = require("openai");
 
 const openai = new OpenAI({
@@ -120,26 +127,26 @@ const generatePrompt = async (subscription) => {
   return prompt;
 };
 
-// const sendNotification = async (to, title, body) => {
-//   // Create question object
-//   let message = {
-//     to,
-//     sound: "default",
-//     title,
-//     body,
-//   };
+const sendNotification = async (to, title, body) => {
+  // Create question object
+  let message = {
+    to,
+    sound: "default",
+    title,
+    body,
+  };
 
-//   if (!Expo.isExpoPushToken(to)) {
-//     console.error(`Push token ${to} is not a valid Expo push token`);
-//     return;
-//   }
+  if (!Expo.isExpoPushToken(to)) {
+    console.error(`Push token ${to} is not a valid Expo push token`);
+    return;
+  }
 
-//   // Send the push notification
-//   (async () => {
-//     let ticket = await expo.sendPushNotificationsAsync([message]);
-//     console.log(ticket);
-//   })();
-// };
+  // Send the push notification
+  (async () => {
+    let ticket = await expo.sendPushNotificationsAsync([message]);
+    console.log(ticket);
+  })();
+};
 
 cron.schedule("*/10 * * * * *", async () => {
   try {
@@ -190,11 +197,19 @@ cron.schedule("*/10 * * * * *", async () => {
 
         await db.collection("questions").add(newQuestion);
 
-        // await sendNotification(
-        //   "ExponentPushToken[7V9dZ7Qq9f8Zv5FjQgJjX-]",
-        //   "New Quiz Available",
-        //   "A new quiz is available for you to take"
-        // );
+        const user = await clerkClient.users.getUser(
+          resourceSubscription.userId
+        );
+
+        const resourceRef = resourceSubscription.resource;
+        const resourceDoc = await resourceRef.get();
+        const resource = resourceDoc.data();
+
+        await sendNotification(
+          user.unsafeMetadata.expoPushToken,
+          "New question on " + resource.title + "!",
+          output.question.slice(0, 50) + "..."
+        );
       })
     );
 
