@@ -27,8 +27,8 @@ export default function SignInForm() {
       });
 
       if (signInAttempt.status === "complete") {
-        await setActive({ session: signInAttempt.createdSessionId });
         setLoading(false);
+        await setActive({ session: signInAttempt.createdSessionId });
         router.replace("/");
       } else {
         setLoading(false);

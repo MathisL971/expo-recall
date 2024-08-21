@@ -17,6 +17,7 @@
       "bundleIdentifier": "com.mathisl971.exporecall"
     },
     "android": {
+      "package": "com.mathisl971.exporecall",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"

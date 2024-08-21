@@ -6,11 +6,17 @@ require("dotenv").config();
 const cron = require("node-cron");
 const Expo = require("expo-server-sdk").default;
 const pdfParse = require("pdf-parse");
+const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
 const { PDFDocument } = require("pdf-lib");
 const serviceAccount = require("./expo-recall-56743-firebase-adminsdk-zc45j-f84ee77898.json");
 const { createClerkClient } = require("@clerk/clerk-sdk-node");
+// Zod
+const { z } = require("zod");
+const { OpenAI } = require("openai");
+// zodFunction from 'openai/helpers/zod'
+const { zodFunction } = require("openai/helpers/zod");
 
 const app = express();
 
@@ -20,6 +26,7 @@ const clerkClient = createClerkClient({
 });
 
 app.use(express.json());
+app.use(cors());
 
 initializeApp({
   credential: cert(serviceAccount),
@@ -28,7 +35,6 @@ initializeApp({
 const db = getFirestore();
 
 let expo = new Expo();
-const { OpenAI } = require("openai");
 
 const openai = new OpenAI({
   apiKey: "sk-proj-g0cyDuwLqlyY24joBZAlT3BlbkFJjGV89VpleH9tbNSzsjaa",
@@ -148,7 +154,7 @@ const sendNotification = async (to, title, body) => {
   })();
 };
 
-cron.schedule("*/10 * * * * *", async () => {
+const issueQuestions = async () => {
   try {
     // Get all resourceSubscriptions from the database
     const resourceSubscriptions = await db
@@ -217,6 +223,88 @@ cron.schedule("*/10 * * * * *", async () => {
   } catch (error) {
     console.error(error);
   }
+};
+
+// cron.schedule("*/10 * * * * *", async () => {
+//   await issueQuestions();
+// });
+
+// Get test endpoint
+app.get("/", (req, res) => {
+  res.send("Hello World!");
+});
+
+const QueryArgs = z.object({
+  question: z.string(),
+  options: z.array(z.string()),
+  answer: z.string(),
+});
+
+app.post("/create-question", async (req, res) => {
+  const { subscriptionId } = req.body;
+
+  const resourceSubscriptionRef = db
+    .collection("resourceSubscriptions")
+    .doc(subscriptionId);
+
+  const resourceSubscriptionDoc = await resourceSubscriptionRef.get();
+  const resourceSubscription = resourceSubscriptionDoc.data();
+
+  const prompt = await generatePrompt(resourceSubscription);
+
+  let completion;
+  try {
+    // completion = await openai.chat.completions.create({
+    //   messages: [{ role: "system", content: prompt }],
+    //   response_format: {
+    //     type: "json_object",
+    //   },
+    //   model: "gpt-3.5-turbo",
+    // });
+    completion = await openai.beta.chat.completions.parse({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content: prompt,
+        },
+      ],
+      response_format: {
+        type: "json_object",
+      },
+      tools: [
+        zodFunction({
+          name: "query",
+          parameters: QueryArgs,
+        }),
+      ],
+    });
+  } catch (error) {
+    console.error(error);
+  }
+
+  const output =
+    completion.choices[0].message.tool_calls[0].function.parsed_arguments;
+
+  const newQuestion = {
+    prompt: output.question,
+    choices: output.options,
+    answer: output.answer,
+    selection: null,
+    type: "MCQ",
+    userId: resourceSubscription.userId,
+    resource: resourceSubscription.resource,
+    dateCreated: new Date(),
+  };
+
+  const newDocRef = await db.collection("questions").add(newQuestion);
+  const newDoc = await newDocRef.get();
+  const newQuestionData = newDoc.data();
+
+  res.json({
+    ...newQuestionData,
+    id: newDoc.id,
+  });
 });
 
 // Start the server on the specified port

@@ -2,28 +2,29 @@ import { View, Text, Switch } from "react-native";
 import React, { useEffect } from "react";
 import TrashIcon from "../../../assets/svgs/trash";
 
-import { Card, H4, Slider, Spinner } from "tamagui";
+import { Button, Card, H4, Slider, Spinner } from "tamagui";
 import { useState } from "react";
 import {
-  deleteResourceSubscription,
   deleteResourceSubscriptionById,
   updateResourceSubscription,
 } from "../../../firebaseConfig";
 import { ResourceSubscription } from "@/types/ResourceSubscription";
+import axios, { AxiosError, AxiosResponse } from "axios";
 
 type SubscriptionCardProps = {
   sub: ResourceSubscription;
   setSubscriptions: React.Dispatch<
     React.SetStateAction<ResourceSubscription[]>
   >;
+  setQuizData: React.Dispatch<React.SetStateAction<any>>;
 };
 
 const SubscriptionCard = (props: SubscriptionCardProps) => {
-  const { sub, setSubscriptions } = props;
-
-  const [pageEnd, setPageEnd] = useState(sub.maxPage);
+  const { sub, setSubscriptions, setQuizData } = props;
 
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [pageEnd, setPageEnd] = useState(sub.maxPage);
 
   const [updateCount, setUpdateCount] = useState(0);
 
@@ -77,9 +78,43 @@ const SubscriptionCard = (props: SubscriptionCardProps) => {
             display: "flex",
             flexDirection: "row",
             justifyContent: "flex-end",
-            gap: 10,
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: 15,
+            marginBottom: "auto",
           }}
         >
+          <Button
+            size={"$3"}
+            theme={"active"}
+            onPress={async () => {
+              try {
+                setLoading(true);
+                const response: AxiosResponse = await axios.post(
+                  `https://348f-24-48-7-74.ngrok-free.app/create-question`,
+                  {
+                    subscriptionId: sub.id,
+                  }
+                );
+
+                setLoading(false);
+                setQuizData({
+                  subscription: sub,
+                  initialQuestion: response.data,
+                });
+              } catch (error) {
+                if (axios.isAxiosError(error)) {
+                  const axiosError: AxiosError = error;
+                  console.error(axiosError.response);
+                } else {
+                  console.error(error);
+                }
+                setLoading(false);
+              }
+            }}
+          >
+            <Text>{loading ? "Loading..." : "Quiz"}</Text>
+          </Button>
           <Switch
             value={sub.shouldQuiz}
             onValueChange={async () => {
@@ -106,20 +141,20 @@ const SubscriptionCard = (props: SubscriptionCardProps) => {
               justifyContent: "center",
             }}
             onTouchStart={async () => {
-              if (loading) return;
+              if (deleting) return;
 
-              setLoading(true);
+              setDeleting(true);
               try {
                 await deleteResourceSubscriptionById(sub.id);
                 setSubscriptions((subs) => subs.filter((s) => s.id !== sub.id));
-                setLoading(false);
+                setDeleting(false);
               } catch (error) {
                 console.error(error);
-                setLoading(false);
+                setDeleting(false);
               }
             }}
           >
-            {loading ? (
+            {deleting ? (
               <Spinner size="small" color="$red10" style={{ marginTop: 3 }} />
             ) : (
               <TrashIcon />

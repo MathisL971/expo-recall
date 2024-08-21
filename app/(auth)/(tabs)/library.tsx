@@ -5,7 +5,8 @@ import { useUser } from "@clerk/clerk-expo";
 import { Button, H2, ScrollView, Separator, Spinner, Text } from "tamagui";
 import { useRouter } from "expo-router";
 import { ResourceSubscription } from "@/types/ResourceSubscription";
-import SubscriptionCard from "../_components/subscription-card";
+import SubscriptionCard from "../_components/SubscriptionCard";
+import QuizModal from "../_components/QuizModal";
 
 export default function Library() {
   const router = useRouter();
@@ -16,6 +17,8 @@ export default function Library() {
     []
   );
   const [fetching, setFetching] = useState<boolean>(true);
+
+  const [quizData, setQuizData] = useState<any>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -90,6 +93,7 @@ export default function Library() {
                     key={sub.id}
                     sub={sub}
                     setSubscriptions={setSubscriptions}
+                    setQuizData={setQuizData}
                   />
                 );
               })
@@ -125,6 +129,8 @@ export default function Library() {
           </View>
         </View>
       </ScrollView>
+
+      {quizData && <QuizModal quizData={quizData} setQuizData={setQuizData} />}
     </View>
   );
 }

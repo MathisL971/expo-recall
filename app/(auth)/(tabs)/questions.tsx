@@ -8,19 +8,15 @@ import {
   Card,
   H2,
   H4,
-  Label,
-  Paragraph,
-  RadioGroup,
   ScrollView,
   Separator,
   Spinner,
-  XStack,
-  YStack,
 } from "tamagui";
 import { useUser } from "@clerk/clerk-expo";
 import { Sheet } from "@/app/_components/sheet";
 import { useRouter } from "expo-router";
 import { ThemeContext } from "@/contexts/ThemeContext";
+import QuizQuestion from "../_components/QuizQuestion";
 
 export default function Questions() {
   const { colorScheme } = useContext(ThemeContext);
@@ -30,8 +26,6 @@ export default function Questions() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [fetching, setFetching] = useState<boolean>(true);
   const [openedQuestion, setOpenedQuestion] = useState<Question | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [selection, setSelection] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -268,167 +262,29 @@ export default function Questions() {
       </ScrollView>
       {openedQuestion && (
         <Sheet onClose={() => setOpenedQuestion(null)}>
-          <H4>{openedQuestion.prompt}</H4>
-          <Paragraph
-            style={{
-              fontSize: "16px",
-              color: "gray",
-            }}
-          >
-            Please select one of the following three options.
-          </Paragraph>
-          <RadioGroup
-            defaultValue={
-              openedQuestion.selection ? openedQuestion.selection : undefined
-            }
-          >
-            <YStack
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "5px",
-              }}
-            >
-              {openedQuestion.choices.map((choice) => {
-                return (
-                  <XStack
-                    key={choice}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                      gap: "10px",
-                      padding: 10,
-                      borderRadius: "10px",
-                      backgroundColor: openedQuestion.selection
-                        ? openedQuestion.selection === choice
-                          ? openedQuestion.answer === choice
-                            ? "green"
-                            : "red"
-                          : choice === openedQuestion.answer
-                          ? "green"
-                          : ""
-                        : "",
-                    }}
-                  >
-                    <RadioGroup.Item
-                      disabled={openedQuestion.selection !== null}
-                      value={choice}
-                      id={`radiogroup-${choice}`}
-                      size={"$6"}
-                      onPress={() => {
-                        setSelection(choice);
-                      }}
-                    >
-                      <RadioGroup.Indicator />
-                    </RadioGroup.Item>
+          <QuizQuestion
+            question={openedQuestion}
+            onSubmit={async (selection) => {
+              try {
+                await updateQuestion(openedQuestion.id, {
+                  selection,
+                });
 
-                    <Label
-                      style={{
-                        margin: 0,
-                        padding: 0,
-                        lineHeight: "22",
-                        width: "85%",
-                      }}
-                      htmlFor={`radiogroup-${choice}`}
-                      size={"$5"}
-                    >
-                      {choice}
-                    </Label>
-                  </XStack>
+                const updatedQuestion = {
+                  ...openedQuestion,
+                  selection,
+                };
+                setOpenedQuestion(updatedQuestion);
+                setQuestions((questions) =>
+                  questions.map((q) =>
+                    q.id === openedQuestion.id ? updatedQuestion : q
+                  )
                 );
-              })}
-            </YStack>
-          </RadioGroup>
-          {!openedQuestion?.selection ? (
-            <Button
-              theme={
-                loading || openedQuestion.selection !== null ? "dark" : "green"
+              } catch (e) {
+                console.error(e);
               }
-              disabled={loading || openedQuestion.selection !== null}
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                gap: "10px",
-              }}
-              onPress={async () => {
-                try {
-                  setLoading(true);
-                  await updateQuestion(openedQuestion.id, {
-                    selection,
-                  });
-
-                  const updatedQuestion = {
-                    ...openedQuestion,
-                    selection,
-                  };
-                  setOpenedQuestion(updatedQuestion);
-                  setQuestions((questions) =>
-                    questions.map((q) =>
-                      q.id === openedQuestion.id ? updatedQuestion : q
-                    )
-                  );
-                  setLoading(false);
-                } catch (e) {
-                  console.error(e);
-                }
-              }}
-            >
-              <View
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 10,
-                }}
-              >
-                {loading && <Spinner size="small" color="$green10" />}
-                <Text>{loading ? "Submitting..." : "Submit"}</Text>
-              </View>
-            </Button>
-          ) : openedQuestion.selection === openedQuestion.answer ? (
-            <View
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 15,
-                backgroundColor: "green",
-                padding: 15,
-                borderRadius: 10,
-              }}
-            >
-              <Text
-                style={{
-                  color: "white",
-                }}
-              >
-                Congrats! You answered correctly! 🎉
-              </Text>
-            </View>
-          ) : (
-            <View
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 15,
-                backgroundColor: "red",
-                padding: 15,
-                borderRadius: 10,
-              }}
-            >
-              <Text
-                style={{
-                  color: "white",
-                }}
-              >
-                You answered incorrectly... 😢 We will quiz you again to make
-                sure you understand the material.
-              </Text>
-            </View>
-          )}
+            }}
+          />
         </Sheet>
       )}
     </View>

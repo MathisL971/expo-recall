@@ -48,6 +48,7 @@ export default function Auth() {
           gap: 5,
           justifyContent: "center",
           alignItems: "center",
+          marginBottom: 20,
         }}
       >
         <Button
@@ -66,6 +67,7 @@ export default function Auth() {
           toggleColorScheme();
         }}
       />
+
       {open && (
         <Sheet onClose={() => setOpen(false)}>
           <Tabs
