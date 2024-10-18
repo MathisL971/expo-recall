@@ -12,8 +12,8 @@ const TrashIcon = () => {
       viewBox="0 0 24 24"
       strokeWidth="1.5"
       stroke={"red"}
-      width={30}
-      height={30}
+      width={25}
+      height={25}
     >
       <Path
         strokeLinecap="round"

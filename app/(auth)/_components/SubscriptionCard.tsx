@@ -1,6 +1,7 @@
 import { View, Text, Switch } from "react-native";
 import React, { useEffect } from "react";
 import TrashIcon from "../../../assets/svgs/trash";
+import QuestionIcon from "../../../assets/svgs/question";
 
 import { Button, Card, H4, Slider, Spinner } from "tamagui";
 import { useState } from "react";
@@ -53,114 +54,19 @@ const SubscriptionCard = (props: SubscriptionCardProps) => {
         padded
         style={{
           display: "flex",
-          flexDirection: "row",
+          flexDirection: "column",
           justifyContent: "space-between",
         }}
       >
-        <View
+        <H4 fontSize={20}>{sub.resource.title}</H4>
+        <Text
           style={{
-            width: "70%",
+            fontSize: 17,
+            color: "gray",
           }}
         >
-          <H4 fontSize={20}>{sub.resource.title}</H4>
-          <Text
-            style={{
-              fontSize: 17,
-              color: "gray",
-              marginBottom: 5,
-            }}
-          >
-            {sub.resource.author}
-          </Text>
-        </View>
-        <View
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "flex-end",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: 15,
-            marginBottom: "auto",
-          }}
-        >
-          <Button
-            size={"$3"}
-            theme={"active"}
-            onPress={async () => {
-              try {
-                setLoading(true);
-                const response: AxiosResponse = await axios.post(
-                  `https://348f-24-48-7-74.ngrok-free.app/create-question`,
-                  {
-                    subscriptionId: sub.id,
-                  }
-                );
-
-                setLoading(false);
-                setQuizData({
-                  subscription: sub,
-                  initialQuestion: response.data,
-                });
-              } catch (error) {
-                if (axios.isAxiosError(error)) {
-                  const axiosError: AxiosError = error;
-                  console.error(axiosError.response);
-                } else {
-                  console.error(error);
-                }
-                setLoading(false);
-              }
-            }}
-          >
-            <Text>{loading ? "Loading..." : "Quiz"}</Text>
-          </Button>
-          <Switch
-            value={sub.shouldQuiz}
-            onValueChange={async () => {
-              try {
-                updateResourceSubscription(sub.id, {
-                  shouldQuiz: !sub.shouldQuiz,
-                });
-                setSubscriptions((subs) =>
-                  subs.map((s) =>
-                    s.id === sub.id
-                      ? { ...sub, shouldQuiz: !sub.shouldQuiz }
-                      : s
-                  )
-                );
-              } catch (error) {
-                console.error(error);
-              }
-            }}
-          />
-          <View
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              justifyContent: "center",
-            }}
-            onTouchStart={async () => {
-              if (deleting) return;
-
-              setDeleting(true);
-              try {
-                await deleteResourceSubscriptionById(sub.id);
-                setSubscriptions((subs) => subs.filter((s) => s.id !== sub.id));
-                setDeleting(false);
-              } catch (error) {
-                console.error(error);
-                setDeleting(false);
-              }
-            }}
-          >
-            {deleting ? (
-              <Spinner size="small" color="$red10" style={{ marginTop: 3 }} />
-            ) : (
-              <TrashIcon />
-            )}
-          </View>
-        </View>
+          {sub.resource.author}
+        </Text>
       </Card.Header>
       <Card.Footer
         padded
@@ -168,29 +74,26 @@ const SubscriptionCard = (props: SubscriptionCardProps) => {
         style={{
           display: "flex",
           flexDirection: "column",
-          gap: 15,
+          gap: 20,
         }}
       >
         <View
           style={{
             display: "flex",
             flexDirection: "row",
-            justifyContent: "space-between",
             alignItems: "center",
-            gap: 5,
           }}
         >
           <Slider
             max={sub.resource.numPages}
             min={0}
             step={1}
-            width={"75%"}
             dir="ltr"
+            width={"80%"}
             style={{
               display: "flex",
               flexDirection: "row",
               alignItems: "center",
-              gap: 5,
               flexGrow: 1,
             }}
             value={[0, pageEnd]}
@@ -216,18 +119,138 @@ const SubscriptionCard = (props: SubscriptionCardProps) => {
             </Slider.Track>
             <Slider.Thumb size="$2" index={1} circular />
           </Slider>
-          <Text
+          <View
             style={{
-              fontSize: 14,
-              fontWeight: "bold",
-              color: "white",
-              textAlign: "center",
-              paddingLeft: 10,
-              width: "13%",
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "flex-end",
+              width: "15%",
+              flexGrow: 1,
             }}
           >
-            {pageEnd}
-          </Text>
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: "bold",
+                color: "white",
+                textAlign: "center",
+              }}
+            >
+              {pageEnd}
+            </Text>
+          </View>
+        </View>
+        <View
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "flex-end",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: 10,
+            marginBottom: "auto",
+          }}
+        >
+          <Button
+            size={"$3"}
+            theme={"green_active"}
+            width={"$5.5"}
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+            onPress={async () => {
+              try {
+                setLoading(true);
+                const response: AxiosResponse = await axios.post(
+                  `https://7f12-2a01-cb20-c00f-9f00-6196-813e-e76-b303.ngrok-free.app/create-question`,
+                  {
+                    subscriptionId: sub.id,
+                  }
+                );
+
+                setLoading(false);
+                setQuizData({
+                  subscription: sub,
+                  initialQuestion: response.data,
+                });
+              } catch (error) {
+                if (axios.isAxiosError(error)) {
+                  const axiosError: AxiosError = error;
+                  console.error(axiosError.response);
+                } else {
+                  console.error(error);
+                }
+                setLoading(false);
+              }
+            }}
+          >
+            <Text>
+              {loading ? (
+                <Spinner
+                  size="small"
+                  color="$green10"
+                  style={{ marginTop: 3, paddingTop: 5 }}
+                />
+              ) : (
+                <View style={{ paddingTop: 5 }}>
+                  <QuestionIcon />
+                </View>
+              )}
+            </Text>
+          </Button>
+          {/* <Switch
+            value={sub.shouldQuiz}
+            onValueChange={async () => {
+              try {
+                updateResourceSubscription(sub.id, {
+                  shouldQuiz: !sub.shouldQuiz,
+                });
+                setSubscriptions((subs) =>
+                  subs.map((s) =>
+                    s.id === sub.id
+                      ? { ...sub, shouldQuiz: !sub.shouldQuiz }
+                      : s
+                  )
+                );
+              } catch (error) {
+                console.error(error);
+              }
+            }}
+          /> */}
+          <Button
+            size={"$3"}
+            theme={"red"}
+            width={"$5"}
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+            onTouchStart={async () => {
+              if (deleting) return;
+
+              setDeleting(true);
+              try {
+                await deleteResourceSubscriptionById(sub.id);
+                setSubscriptions((subs) => subs.filter((s) => s.id !== sub.id));
+                setDeleting(false);
+              } catch (error) {
+                console.error(error);
+                setDeleting(false);
+              }
+            }}
+          >
+            {deleting ? (
+              <Spinner size="small" color="$red10" style={{ marginTop: 3 }} />
+            ) : (
+              <TrashIcon />
+            )}
+          </Button>
         </View>
       </Card.Footer>
     </Card>

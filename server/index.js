@@ -10,7 +10,7 @@ const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
 const { PDFDocument } = require("pdf-lib");
-const serviceAccount = require("./expo-recall-56743-firebase-adminsdk-zc45j-f84ee77898.json");
+const serviceAccount = require("./expo-recall-428621-8a3be65c0cc8.json");
 const { createClerkClient } = require("@clerk/clerk-sdk-node");
 // Zod
 const { z } = require("zod");
@@ -229,11 +229,6 @@ const issueQuestions = async () => {
 //   await issueQuestions();
 // });
 
-// Get test endpoint
-app.get("/", (req, res) => {
-  res.send("Hello World!");
-});
-
 const QueryArgs = z.object({
   question: z.string(),
   options: z.array(z.string()),
@@ -243,14 +238,31 @@ const QueryArgs = z.object({
 app.post("/create-question", async (req, res) => {
   const { subscriptionId } = req.body;
 
+  console.log("Subscription ID: " + subscriptionId);
+
   const resourceSubscriptionRef = db
     .collection("resourceSubscriptions")
     .doc(subscriptionId);
 
+  console.log(resourceSubscriptionRef);
+
   const resourceSubscriptionDoc = await resourceSubscriptionRef.get();
+
+  console.log("Resource subscription doc: " + resourceSubscriptionDoc);
+
+  if (!resourceSubscriptionDoc.exists) {
+    return res.status(404).send("Resource subscription not found");
+  }
+
+  console.log("Resource subscription found");
+
   const resourceSubscription = resourceSubscriptionDoc.data();
 
+  console.log(resourceSubscription);
+
   const prompt = await generatePrompt(resourceSubscription);
+
+  console.log(prompt);
 
   let completion;
   try {
