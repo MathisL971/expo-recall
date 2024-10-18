@@ -1,8 +1,10 @@
+const { Client } = require("pg");
 // Initialize a new instance of express
 const express = require("express");
 const { initializeApp, cert } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
 require("dotenv").config();
+const { connectToDatabase } = require("./db"); // Adjust path as necessary
 const cron = require("node-cron");
 const Expo = require("expo-server-sdk").default;
 const pdfParse = require("pdf-parse");
@@ -18,7 +20,15 @@ const { OpenAI } = require("openai");
 // zodFunction from 'openai/helpers/zod'
 const { zodFunction } = require("openai/helpers/zod");
 
+const client = new Client({
+  connectionString: process.env.DATABASE_URL,
+});
+client.connect();
+
 const app = express();
+
+const resourcesRouter = require("./routes/resources");
+const resourceSubscriptionsRouter = require("./routes/resourceSubscriptions");
 
 const clerkClient = createClerkClient({
   publishableKey: process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY,
@@ -27,6 +37,9 @@ const clerkClient = createClerkClient({
 
 app.use(express.json());
 app.use(cors());
+
+app.use("/api/resources", resourcesRouter);
+app.use("/api/resourceSubscriptions", resourceSubscriptionsRouter);
 
 initializeApp({
   credential: cert(serviceAccount),
@@ -322,6 +335,13 @@ app.post("/create-question", async (req, res) => {
 // Start the server on the specified port
 // Define the port number
 const PORT = 3002;
-app.listen(PORT, () => {
-  console.log(`Server started on port ${PORT}`);
-});
+
+connectToDatabase()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server started on port ${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error("Database connection failed:", error);
+  });
